@@ -1,1 +1,111 @@
-ar-card
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>MARI | Product Designer AR</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      }
+      /* 画面下部のガイドUI */
+      #ui-overlay {
+        position: fixed;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        background: rgba(26, 38, 57, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: #ffffff;
+        padding: 10px 20px;
+        border-radius: 999px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ui-overlay">POINT CAMERA AT FRONT OF CARD</div>
+
+    <a-scene
+      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.001;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+    >
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <!-- 名刺認識ターゲット (index: 0) -->
+      <a-entity id="card-target" mindar-image-target="targetIndex: 0">
+        
+        <!-- 1. 名刺の輪郭に浮かぶ繊細なワイヤーフレーム枠 -->
+        <a-plane
+          position="0 0 0.02"
+          width="1.02"
+          height="0.58"
+          material="color: #4A6FA5; wireframe: true; opacity: 0.6;"
+          animation="property: position; to: 0 0 0.05; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine"
+        ></a-plane>
+
+        <!-- 2. 名刺の右横（または上）に浮かぶプロフィールカードUI -->
+        <a-entity position="0 0.48 0.08" rotation="15 0 0">
+          <!-- カード背景 -->
+          <a-plane
+            width="0.95"
+            height="0.28"
+            color="#1A2639"
+            opacity="0.92"
+          ></a-plane>
+          
+          <!-- テキスト情報 -->
+          <a-text
+            value="MARI"
+            position="-0.40 0.04 0.01"
+            color="#FFFFFF"
+            width="1.8"
+            letter-spacing="4"
+          ></a-text>
+          <a-text
+            value="UI/UX & PRODUCT DESIGNER"
+            position="-0.40 -0.05 0.01"
+            color="#A3B8D8"
+            width="1.1"
+            letter-spacing="2"
+          ></a-text>
+        </a-entity>
+
+        <!-- 3. 浮遊するブルーボネットカラーのアクセント球体 -->
+        <a-sphere
+          position="0 0.25 0.12"
+          radius="0.025"
+          color="#5B7DB1"
+          animation="property: position; to: 0 0.29 0.16; dir: alternate; dur: 1800; loop: true; easing: easeInOutSine"
+        ></a-sphere>
+
+      </a-entity>
+    </a-scene>
+
+    <script>
+      // 名刺を認識したら下部のガイド文字を自動で非表示にする
+      const target = document.querySelector('#card-target');
+      const overlay = document.querySelector('#ui-overlay');
+
+      target.addEventListener('targetFound', () => {
+        overlay.style.opacity = '0';
+      });
+      target.addEventListener('targetLost', () => {
+        overlay.style.opacity = '1';
+      });
+    </script>
+  </body>
+</html>
