@@ -4,8 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>MARI | Product Designer AR</title>
+    <!-- A-FrameとMindARに加え、3Dモデルのアニメーションを動かすための extras スクリプトを追加 -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.2.0/dist/aframe-extras.min.js"></script>
     <style>
       body {
         margin: 0;
@@ -30,10 +32,30 @@
         pointer-events: none;
         transition: opacity 0.4s ease;
       }
+      #hidden-video {
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        opacity: 0.01;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
-    <div id="ui-overlay">POINT CAMERA AT FRONT OF CARD</div>
+    <div id="ui-overlay">TAP SCREEN &amp; POINT AT CARD</div>
+
+    <video
+      id="hidden-video"
+      src="./demo.mp4"
+      preload="auto"
+      loop
+      muted
+      playsinline
+      webkit-playsinline
+      crossorigin="anonymous"
+    ></video>
 
     <a-scene
       mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.001;"
@@ -45,69 +67,82 @@
       raycaster="objects: .clickable"
     >
       <a-assets>
-        <!-- 名刺の下に表示する動画 -->
-        <video
-          id="card-video"
-          src="./demo.mp4"
-          preload="auto"
-          loop
-          muted
-          playsinline
-          webkit-playsinline
-          crossorigin="anonymous"
-        ></video>
+        <!-- 3Dの猫モデルを事前にロード（GitHubの cat.glb） -->
+        <a-asset-item id="cat-model" src="./cat.glb"></a-asset-item>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- 名刺本体 (幅: 1.0, 高さ: 0.57 を基準としたレイアウト) -->
+      <!-- 名刺本体 (幅: 1.0, 高さ: 0.57) -->
       <a-entity id="card-target" mindar-image-target="targetIndex: 0">
         
-        <!-- 1. 名刺の右側：丸い顔写真 -->
-        <a-plane
-          id="avatar-plane"
-          position="0.82 0.02 0.02"
-          width="0.46"
-          height="0.46"
-          material="transparent: true; alphaTest: 0.05;"
-        ></a-plane>
+        <!-- =【新機能】ランダムに歩き・毛づくろいする黒猫 = -->
+        <!-- positionやscaleは猫のサイズに合わせて微調整します（ここでは名刺の左下付近からスタート） -->
+        <a-entity
+          id="black-cat"
+          gltf-model="#cat-model"
+          position="-0.6 -0.5 0.05"
+          scale="0.12 0.12 0.12"
+          rotation="90 0 0"
+          animation-mixer="clip: walk; loop: repeat; timeScale: 1;"
+          shadow="cast: true; receive: false;"
+        ></a-entity>
 
-        <!-- 2. 顔写真の右側：名前 と 下に肩書き -->
-        <a-entity position="1.15 0.05 0.02">
-          <a-text
-            value="MARI"
-            position="0 0.07 0"
-            color="#FFFFFF"
-            width="2.2"
-            font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-            letter-spacing="4"
-          ></a-text>
-          <a-text
-            value="PRODUCT DESIGNER"
-            position="0 -0.07 0"
-            color="#E2E8F0"
-            width="1.15"
-            font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-            letter-spacing="2"
-          ></a-text>
+        <!-- 1. 名刺の右側：プロフィール統合エリア -->
+        <a-entity position="0.95 0.08 0.02">
+          <a-plane
+            width="1.0"
+            height="0.38"
+            color="#1A2639"
+            opacity="0.85"
+            material="roughness: 1; metalness: 0;"
+            position="0.22 0 -0.01"
+          ></a-plane>
+
+          <a-plane
+            id="avatar-plane"
+            position="-0.15 0 0.01"
+            width="0.28"
+            height="0.28"
+            material="transparent: true; alphaTest: 0.05;"
+          ></a-plane>
+
+          <a-entity position="0.08 0 0.01">
+            <a-text
+              value="MARI"
+              position="0 0.05 0"
+              color="#FFFFFF"
+              width="1.5"
+              font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
+              letter-spacing="4"
+            ></a-text>
+            <a-text
+              value="PRODUCT DESIGNER"
+              position="0 -0.05 0"
+              color="#CBD5E1"
+              width="0.8"
+              font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
+              letter-spacing="2"
+            ></a-text>
+          </a-entity>
         </a-entity>
 
-        <!-- 3. 名刺の下：名刺サイズの動画 -->
-        <a-video
+        <!-- 2. 名刺の下：名刺サイズの動画 -->
+        <a-plane
           id="video-plane"
-          src="#card-video"
-          position="0 -0.66 0.02"
+          position="0 -0.56 0.02"
           width="1.0"
           height="0.57"
-        ></a-video>
+          material="shader: flat; color: #FFFFFF;"
+        ></a-plane>
 
-        <!-- 4. 動画の右側：ピル型ボタン (Website / Twitter) -->
+        <!-- 3. 動画の右側：Website / Twitter ボタン -->
         <a-plane
           id="btn-website"
           class="clickable"
-          position="1.05 -0.52 0.03"
-          width="0.82"
-          height="0.21"
+          position="0.95 -0.42 0.03"
+          width="0.75"
+          height="0.18"
           material="transparent: true; alphaTest: 0.05;"
           data-url="https://marimo-ux.github.io/ar-card/"
         ></a-plane>
@@ -115,20 +150,20 @@
         <a-plane
           id="btn-twitter"
           class="clickable"
-          position="1.05 -0.80 0.03"
-          width="0.82"
-          height="0.21"
+          position="0.95 -0.66 0.03"
+          width="0.75"
+          height="0.18"
           material="transparent: true; alphaTest: 0.05;"
           data-url="https://x.com/"
         ></a-plane>
 
-        <!-- 5. 最下部：4つの丸いアイコン (Message / Phone / Video / Email) -->
+        <!-- 4. 最下部：コンタクトアイコン4つ -->
         <a-plane
           id="icon-1"
           class="clickable"
-          position="-0.22 -1.24 0.03"
-          width="0.28"
-          height="0.28"
+          position="-0.36 -1.02 0.03"
+          width="0.22"
+          height="0.22"
           material="transparent: true; alphaTest: 0.05;"
           data-url="sms:"
         ></a-plane>
@@ -136,9 +171,9 @@
         <a-plane
           id="icon-2"
           class="clickable"
-          position="0.32 -1.24 0.03"
-          width="0.28"
-          height="0.28"
+          position="-0.12 -1.02 0.03"
+          width="0.22"
+          height="0.22"
           material="transparent: true; alphaTest: 0.05;"
           data-url="tel:"
         ></a-plane>
@@ -146,9 +181,9 @@
         <a-plane
           id="icon-3"
           class="clickable"
-          position="0.86 -1.24 0.03"
-          width="0.28"
-          height="0.28"
+          position="0.12 -1.02 0.03"
+          width="0.22"
+          height="0.22"
           material="transparent: true; alphaTest: 0.05;"
           data-url="https://cal.com/"
         ></a-plane>
@@ -156,9 +191,9 @@
         <a-plane
           id="icon-4"
           class="clickable"
-          position="1.40 -1.24 0.03"
-          width="0.28"
-          height="0.28"
+          position="0.36 -1.02 0.03"
+          width="0.22"
+          height="0.22"
           material="transparent: true; alphaTest: 0.05;"
           data-url="mailto:hello@example.com"
         ></a-plane>
@@ -167,7 +202,6 @@
     </a-scene>
 
     <script>
-      // 1. プロフィール写真を丸く切り抜く処理
       function createCircularAvatar(imgSrc, targetId) {
         const img = new Image();
         img.crossOrigin = 'anonymous';
@@ -178,21 +212,18 @@
           canvas.height = size;
           const ctx = canvas.getContext('2d');
 
-          // 円形マスク
           ctx.beginPath();
           ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
           ctx.closePath();
           ctx.clip();
 
-          // 画像を中央トリミングして描画
           const minSide = Math.min(img.width, img.height);
           const sx = (img.width - minSide) / 2;
           const sy = (img.height - minSide) / 2;
           ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
 
-          // 細い白フチを追加
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-          ctx.lineWidth = 8;
+          ctx.lineWidth = 10;
           ctx.stroke();
 
           const texture = new THREE.CanvasTexture(canvas);
@@ -204,7 +235,6 @@
         img.src = imgSrc;
       }
 
-      // 2. ピル型（角丸）ボタンの生成
       function createPillButton(label, targetId) {
         const w = 640;
         const h = 164;
@@ -225,7 +255,7 @@
         ctx.fill();
 
         ctx.fillStyle = '#1A2639';
-        ctx.font = '600 54px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
+        ctx.font = '600 52px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(label, w / 2, h / 2 + 2);
@@ -237,7 +267,6 @@
         el.getObject3D('mesh').material.needsUpdate = true;
       }
 
-      // 3. 下部4つの丸アイコンの生成 (chat / phone / video / mail)
       function createCircleIcon(type, targetId) {
         const size = 256;
         const canvas = document.createElement('canvas');
@@ -245,13 +274,11 @@
         canvas.height = size;
         const ctx = canvas.getContext('2d');
 
-        // 白い円背景
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
         ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
         ctx.fill();
 
-        // アイコン描画（濃紺）
         ctx.fillStyle = '#1A2639';
         ctx.strokeStyle = '#1A2639';
         ctx.lineWidth = 10;
@@ -276,9 +303,7 @@
           ctx.lineWidth = 18;
           ctx.stroke();
         } else if (type === 'video') {
-          // カメラ本体
           ctx.fillRect(cx - 46, cy - 26, 62, 52);
-          // レンズ三角
           ctx.beginPath();
           ctx.moveTo(cx + 20, cy - 10);
           ctx.lineTo(cx + 46, cy - 24);
@@ -302,9 +327,11 @@
         el.getObject3D('mesh').material.needsUpdate = true;
       }
 
-      // 初期化とイベント設定
       window.addEventListener('DOMContentLoaded', () => {
         const scene = document.querySelector('a-scene');
+        const video = document.querySelector('#hidden-video');
+        let isCardFound = false;
+
         scene.addEventListener('loaded', () => {
           createCircularAvatar('./avatar.jpg', '#avatar-plane');
           createPillButton('Website', '#btn-website');
@@ -313,31 +340,8 @@
           createCircleIcon('phone', '#icon-2');
           createCircleIcon('video', '#icon-3');
           createCircleIcon('mail', '#icon-4');
-        });
 
-        // クリック（タップ）時のリンク遷移
-        document.querySelectorAll('.clickable').forEach((el) => {
-          el.addEventListener('click', () => {
-            const url = el.getAttribute('data-url');
-            if (url) window.open(url, '_blank');
-          });
-        });
-
-        // 名刺認識時にガイドを消し、動画を自動再生する
-        const target = document.querySelector('#card-target');
-        const overlay = document.querySelector('#ui-overlay');
-        const video = document.querySelector('#card-video');
-
-        target.addEventListener('targetFound', () => {
-          overlay.style.opacity = '0';
-          if (video) video.play().catch(() => {});
-        });
-
-        target.addEventListener('targetLost', () => {
-          overlay.style.opacity = '1';
-          if (video) video.pause();
-        });
-      });
-    </script>
-  </body>
-</html>
+          const videoTexture = new THREE.VideoTexture(video);
+          videoTexture.colorSpace = THREE.SRGBColorSpace;
+          videoTexture.minFilter = THREE.LinearFilter;
+          videoTexture
