@@ -46,8 +46,8 @@
 
     <div class="hidden-assets">
       <canvas id="canvas-avatar" width="512" height="512"></canvas>
-      <canvas id="canvas-website" width="640" height="164"></canvas>
-      <canvas id="canvas-twitter" width="640" height="164"></canvas>
+      <canvas id="canvas-website" width="480" height="140"></canvas>
+      <canvas id="canvas-twitter" width="480" height="140"></canvas>
       <canvas id="canvas-icon1" width="256" height="256"></canvas>
       <canvas id="canvas-icon2" width="256" height="256"></canvas>
       <canvas id="canvas-icon3" width="256" height="256"></canvas>
@@ -75,88 +75,93 @@
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- 名刺本体 (幅: 1.0, 高さ: 0.57) -->
+      <!-- 【中央基準】物理の名刺 (幅: 1.0, 高さ: 0.57, 中心 y = 0) -->
       <a-entity id="card-target" mindar-image-target="targetIndex: 0">
         
-        <!-- 1. 名刺のすぐ右側：プロフィールエリア（縦画面でも見切れないようコンパクト化） -->
-        <a-entity position="0.56 0.04 0.02">
-          <!-- ダークネイビーの座布団（左端が名刺の右端にピタッと揃う位置） -->
+        <!-- ========================================== -->
+        <!-- 【上エリア：楽しく・パーソナル】 (y = +0.47) -->
+        <!-- ========================================== -->
+        <a-entity position="0 0.47 0.02">
+          <!-- 名刺と同じ横幅(1.0)のダークネイビー背景 -->
           <a-plane
-            width="0.72"
-            height="0.30"
+            width="1.0"
+            height="0.26"
             color="#1A2639"
             opacity="0.90"
             material="shader: flat;"
-            position="0.36 0 -0.01"
+            position="0 0 -0.01"
           ></a-plane>
 
-          <!-- 丸い顔写真 -->
+          <!-- 左：丸い顔写真 -->
           <a-plane
             id="el-avatar"
-            position="0.14 0 0.01"
-            width="0.21"
-            height="0.21"
+            position="-0.36 0 0.01"
+            width="0.19"
+            height="0.19"
             material="src: #canvas-avatar; shader: flat; transparent: true; alphaTest: 0.05;"
           ></a-plane>
 
-          <!-- 名前 と 肩書き -->
-          <a-entity position="0.28 0 0.01">
+          <!-- 中央：名前と肩書き -->
+          <a-entity position="-0.22 0 0.01">
             <a-text
               value="MARI"
-              position="0 0.04 0"
+              position="0 0.038 0"
               color="#FFFFFF"
-              width="1.05"
+              width="0.95"
               font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
               letter-spacing="3"
             ></a-text>
             <a-text
               value="PRODUCT DESIGNER"
-              position="0 -0.04 0"
+              position="0 -0.038 0"
               color="#CBD5E1"
-              width="0.52"
+              width="0.46"
               font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
               letter-spacing="1"
             ></a-text>
           </a-entity>
+
+          <!-- 右：Website / X ミニボタン（上下2段） -->
+          <a-plane
+            id="el-website"
+            class="clickable"
+            position="0.31 0.052 0.02"
+            width="0.30"
+            height="0.084"
+            material="src: #canvas-website; shader: flat; transparent: true; alphaTest: 0.05;"
+            data-url="https://marimo-ux.github.io/ar-card/"
+          ></a-plane>
+
+          <a-plane
+            id="el-twitter"
+            class="clickable"
+            position="0.31 -0.052 0.02"
+            width="0.30"
+            height="0.084"
+            material="src: #canvas-twitter; shader: flat; transparent: true; alphaTest: 0.05;"
+            data-url="https://x.com/"
+          ></a-plane>
         </a-entity>
 
-        <!-- 2. 名刺の下：名刺サイズの動画 -->
+        <!-- ========================================== -->
+        <!-- 【下エリア：情報・実用】 (y = -0.60 / -1.03) -->
+        <!-- ========================================== -->
+        <!-- 1. 名刺のすぐ下：ショーケース動画 (幅: 1.0, 高さ: 0.57) -->
         <a-plane
           id="el-video"
-          position="0 -0.54 0.02"
+          position="0 -0.60 0.02"
           width="1.0"
           height="0.57"
           material="src: #card-video; shader: flat;"
         ></a-plane>
 
-        <!-- 3. 動画のすぐ右側：Website / Twitter ボタン（座布団と同じ横幅・左端に揃える） -->
-        <a-plane
-          id="el-website"
-          class="clickable"
-          position="0.92 -0.41 0.03"
-          width="0.72"
-          height="0.17"
-          material="src: #canvas-website; shader: flat; transparent: true; alphaTest: 0.05;"
-          data-url="https://marimo-ux.github.io/ar-card/"
-        ></a-plane>
-
-        <a-plane
-          id="el-twitter"
-          class="clickable"
-          position="0.92 -0.64 0.03"
-          width="0.72"
-          height="0.17"
-          material="src: #canvas-twitter; shader: flat; transparent: true; alphaTest: 0.05;"
-          data-url="https://x.com/"
-        ></a-plane>
-
-        <!-- 4. 最下部：コンタクトアイコン4つ（全体の横幅の中央バランスに配置） -->
+        <!-- 2. 最下部：コンタクトアイコン4つ（親指で押しやすい位置） -->
         <a-plane
           id="el-icon1"
           class="clickable"
-          position="-0.22 -1.00 0.03"
-          width="0.22"
-          height="0.22"
+          position="-0.38 -1.03 0.03"
+          width="0.20"
+          height="0.20"
           material="src: #canvas-icon1; shader: flat; transparent: true; alphaTest: 0.05;"
           data-url="sms:"
         ></a-plane>
@@ -164,9 +169,9 @@
         <a-plane
           id="el-icon2"
           class="clickable"
-          position="0.06 -1.00 0.03"
-          width="0.22"
-          height="0.22"
+          position="-0.127 -1.03 0.03"
+          width="0.20"
+          height="0.20"
           material="src: #canvas-icon2; shader: flat; transparent: true; alphaTest: 0.05;"
           data-url="tel:"
         ></a-plane>
@@ -174,9 +179,9 @@
         <a-plane
           id="el-icon3"
           class="clickable"
-          position="0.34 -1.00 0.03"
-          width="0.22"
-          height="0.22"
+          position="0.127 -1.03 0.03"
+          width="0.20"
+          height="0.20"
           material="src: #canvas-icon3; shader: flat; transparent: true; alphaTest: 0.05;"
           data-url="https://cal.com/"
         ></a-plane>
@@ -184,9 +189,9 @@
         <a-plane
           id="el-icon4"
           class="clickable"
-          position="0.62 -1.00 0.03"
-          width="0.22"
-          height="0.22"
+          position="0.38 -1.03 0.03"
+          width="0.20"
+          height="0.20"
           material="src: #canvas-icon4; shader: flat; transparent: true; alphaTest: 0.05;"
           data-url="mailto:hello@example.com"
         ></a-plane>
@@ -240,8 +245,8 @@
       function drawPillButton(canvasId, planeId, label) {
         const canvas = document.querySelector(canvasId);
         const ctx = canvas.getContext('2d');
-        const w = 640;
-        const h = 164;
+        const w = 480;
+        const h = 140;
         const r = h / 2;
 
         ctx.clearRect(0, 0, w, h);
@@ -256,7 +261,7 @@
         ctx.fill();
 
         ctx.fillStyle = '#1A2639';
-        ctx.font = '600 54px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
+        ctx.font = '600 52px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(label, w / 2, h / 2 + 2);
@@ -293,7 +298,6 @@
           ctx.lineTo(cx - 8, cy + 30);
           ctx.fill();
         } else if (type === 'phone') {
-          // 受話器の形をくっきり描画
           ctx.save();
           ctx.translate(cx, cy);
           ctx.rotate(-Math.PI / 4);
@@ -326,7 +330,7 @@
 
       drawAvatar();
       drawPillButton('#canvas-website', '#el-website', 'Website');
-      drawPillButton('#canvas-twitter', '#el-twitter', 'Twitter');
+      drawPillButton('#canvas-twitter', '#el-twitter', 'X / Twitter');
       drawCircleIcon('#canvas-icon1', '#el-icon1', 'chat');
       drawCircleIcon('#canvas-icon2', '#el-icon2', 'phone');
       drawCircleIcon('#canvas-icon3', '#el-icon3', 'video');
