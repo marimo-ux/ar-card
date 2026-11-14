@@ -30,7 +30,7 @@
         pointer-events: none;
         transition: opacity 0.4s ease;
       }
-      #hidden-video {
+      .hidden-assets {
         position: fixed;
         top: -9999px;
         left: -9999px;
@@ -40,184 +40,35 @@
         pointer-events: none;
       }
     </style>
-
-    <script>
-      // 1. 丸いプロフィール写真コンポーネント
-      AFRAME.registerComponent('circular-avatar', {
-        schema: { src: { type: 'string' } },
-        init: function () {
-          const el = this.el;
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            const size = 512;
-            const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-
-            ctx.beginPath();
-            ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
-
-            const minSide = Math.min(img.width, img.height);
-            const sx = (img.width - minSide) / 2;
-            const sy = (img.height - minSide) / 2;
-            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.lineWidth = 10;
-            ctx.stroke();
-
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.colorSpace = THREE.SRGBColorSpace;
-            el.setObject3D('mesh', new THREE.Mesh(
-              new THREE.PlaneGeometry(0.28, 0.28),
-              new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.05 })
-            ));
-          };
-          img.src = this.data.src;
-        }
-      });
-
-      // 2. ピル型ボタンコンポーネント
-      AFRAME.registerComponent('pill-button', {
-        schema: { label: { type: 'string' } },
-        init: function () {
-          const w = 640;
-          const h = 164;
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-
-          const r = h / 2;
-          ctx.fillStyle = '#FFFFFF';
-          ctx.beginPath();
-          ctx.moveTo(r, 0);
-          ctx.lineTo(w - r, 0);
-          ctx.arc(w - r, r, r, -Math.PI / 2, Math.PI / 2);
-          ctx.lineTo(r, h);
-          ctx.arc(r, r, r, Math.PI / 2, -Math.PI / 2);
-          ctx.closePath();
-          ctx.fill();
-
-          ctx.fillStyle = '#1A2639';
-          ctx.font = '600 52px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(this.data.label, w / 2, h / 2 + 2);
-
-          const texture = new THREE.CanvasTexture(canvas);
-          texture.colorSpace = THREE.SRGBColorSpace;
-          this.el.setObject3D('mesh', new THREE.Mesh(
-            new THREE.PlaneGeometry(0.75, 0.18),
-            new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.05 })
-          ));
-        }
-      });
-
-      // 3. 丸アイコンコンポーネント
-      AFRAME.registerComponent('circle-icon', {
-        schema: { type: { type: 'string' } },
-        init: function () {
-          const size = 256;
-          const canvas = document.createElement('canvas');
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext('2d');
-
-          ctx.fillStyle = '#FFFFFF';
-          ctx.beginPath();
-          ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#1A2639';
-          ctx.strokeStyle = '#1A2639';
-          ctx.lineWidth = 10;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-
-          const cx = size / 2;
-          const cy = size / 2;
-          const type = this.data.type;
-
-          if (type === 'chat') {
-            ctx.beginPath();
-            ctx.ellipse(cx, cy - 6, 48, 38, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(cx - 26, cy + 24);
-            ctx.lineTo(cx - 42, cy + 44);
-            ctx.lineTo(cx - 8, cy + 30);
-            ctx.fill();
-          } else if (type === 'phone') {
-            ctx.beginPath();
-            ctx.arc(cx + 12, cy - 12, 46, Math.PI * 0.65, Math.PI * 1.35);
-            ctx.lineWidth = 18;
-            ctx.stroke();
-          } else if (type === 'video') {
-            ctx.fillRect(cx - 46, cy - 26, 62, 52);
-            ctx.beginPath();
-            ctx.moveTo(cx + 20, cy - 10);
-            ctx.lineTo(cx + 46, cy - 24);
-            ctx.lineTo(cx + 46, cy + 24);
-            ctx.lineTo(cx + 20, cy + 10);
-            ctx.closePath();
-            ctx.fill();
-          } else if (type === 'mail') {
-            ctx.strokeRect(cx - 44, cy - 30, 88, 60);
-            ctx.beginPath();
-            ctx.moveTo(cx - 44, cy - 30);
-            ctx.lineTo(cx, cy + 6);
-            ctx.lineTo(cx + 44, cy - 30);
-            ctx.stroke();
-          }
-
-          const texture = new THREE.CanvasTexture(canvas);
-          texture.colorSpace = THREE.SRGBColorSpace;
-          this.el.setObject3D('mesh', new THREE.Mesh(
-            new THREE.PlaneGeometry(0.22, 0.22),
-            new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.05 })
-          ));
-        }
-      });
-
-      // 4. 動画パネルコンポーネント
-      AFRAME.registerComponent('video-screen', {
-        init: function () {
-          const video = document.querySelector('#hidden-video');
-          const texture = new THREE.VideoTexture(video);
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.minFilter = THREE.LinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          this.el.setObject3D('mesh', new THREE.Mesh(
-            new THREE.PlaneGeometry(1.0, 0.57),
-            new THREE.MeshBasicMaterial({ map: texture })
-          ));
-        }
-      });
-    </script>
   </head>
   <body>
     <div id="ui-overlay">TAP SCREEN &amp; POINT AT CARD</div>
 
-    <video
-      id="hidden-video"
-      src="./demo.mp4"
-      preload="auto"
-      loop
-      muted
-      playsinline
-      webkit-playsinline
-      crossorigin="anonymous"
-    ></video>
+    <!-- A-Frameが直接参照するキャンバスと動画 -->
+    <div class="hidden-assets">
+      <canvas id="canvas-avatar" width="512" height="512"></canvas>
+      <canvas id="canvas-website" width="640" height="164"></canvas>
+      <canvas id="canvas-twitter" width="640" height="164"></canvas>
+      <canvas id="canvas-icon1" width="256" height="256"></canvas>
+      <canvas id="canvas-icon2" width="256" height="256"></canvas>
+      <canvas id="canvas-icon3" width="256" height="256"></canvas>
+      <canvas id="canvas-icon4" width="256" height="256"></canvas>
+      <video
+        id="card-video"
+        src="./demo.mp4"
+        preload="auto"
+        loop
+        muted
+        playsinline
+        webkit-playsinline
+        crossorigin="anonymous"
+      ></video>
+    </div>
 
     <a-scene
       mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.001;"
       color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights"
+      renderer="colorManagement: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       cursor="rayOrigin: mouse"
@@ -230,23 +81,27 @@
         
         <!-- 1. 名刺の右側：プロフィール統合エリア -->
         <a-entity position="0.95 0.08 0.02">
+          <!-- ダークネイビーの半透明背景 -->
           <a-plane
-            width="1.0"
+            width="1.05"
             height="0.38"
             color="#1A2639"
-            opacity="0.85"
+            opacity="0.88"
             material="shader: flat;"
-            position="0.22 0 -0.01"
+            position="0.24 0 -0.01"
           ></a-plane>
 
           <!-- 丸い顔写真 -->
-          <a-entity
+          <a-plane
+            id="el-avatar"
             position="-0.15 0 0.01"
-            circular-avatar="src: ./avatar.jpg"
-          ></a-entity>
+            width="0.28"
+            height="0.28"
+            material="src: #canvas-avatar; shader: flat; transparent: true; alphaTest: 0.05;"
+          ></a-plane>
 
           <!-- 名前 と 肩書き -->
-          <a-entity position="0.08 0 0.01">
+          <a-entity position="0.06 0 0.01">
             <a-text
               value="MARI"
               position="0 0.05 0"
@@ -267,20 +122,269 @@
         </a-entity>
 
         <!-- 2. 名刺の下：名刺サイズの動画 -->
-        <a-entity
+        <a-plane
+          id="el-video"
           position="0 -0.56 0.02"
-          video-screen
-        ></a-entity>
+          width="1.0"
+          height="0.57"
+          material="src: #card-video; shader: flat;"
+        ></a-plane>
 
         <!-- 3. 動画の右側：Website / Twitter ボタン -->
-        <a-entity
+        <a-plane
+          id="el-website"
           class="clickable"
           position="0.95 -0.42 0.03"
-          pill-button="label: Website"
+          width="0.75"
+          height="0.18"
+          material="src: #canvas-website; shader: flat; transparent: true; alphaTest: 0.05;"
           data-url="https://marimo-ux.github.io/ar-card/"
-        ></a-entity>
+        ></a-plane>
 
-        <a-entity
+        <a-plane
+          id="el-twitter"
           class="clickable"
           position="0.95 -0.66 0.03"
-          pill-button
+          width="0.75"
+          height="0.18"
+          material="src: #canvas-twitter; shader: flat; transparent: true; alphaTest: 0.05;"
+          data-url="https://x.com/"
+        ></a-plane>
+
+        <!-- 4. 最下部：コンタクトアイコン4つ -->
+        <a-plane
+          id="el-icon1"
+          class="clickable"
+          position="-0.36 -1.02 0.03"
+          width="0.22"
+          height="0.22"
+          material="src: #canvas-icon1; shader: flat; transparent: true; alphaTest: 0.05;"
+          data-url="sms:"
+        ></a-plane>
+
+        <a-plane
+          id="el-icon2"
+          class="clickable"
+          position="-0.12 -1.02 0.03"
+          width="0.22"
+          height="0.22"
+          material="src: #canvas-icon2; shader: flat; transparent: true; alphaTest: 0.05;"
+          data-url="tel:"
+        ></a-plane>
+
+        <a-plane
+          id="el-icon3"
+          class="clickable"
+          position="0.12 -1.02 0.03"
+          width="0.22"
+          height="0.22"
+          material="src: #canvas-icon3; shader: flat; transparent: true; alphaTest: 0.05;"
+          data-url="https://cal.com/"
+        ></a-plane>
+
+        <a-plane
+          id="el-icon4"
+          class="clickable"
+          position="0.36 -1.02 0.03"
+          width="0.22"
+          height="0.22"
+          material="src: #canvas-icon4; shader: flat; transparent: true; alphaTest: 0.05;"
+          data-url="mailto:hello@example.com"
+        ></a-plane>
+
+      </a-entity>
+    </a-scene>
+
+    <script>
+      // テクスチャをA-Frameに強制再描画させるヘルパー
+      function refreshMaterial(planeId) {
+        const el = document.querySelector(planeId);
+        if (!el) return;
+        const mesh = el.getObject3D('mesh');
+        if (mesh && mesh.material && mesh.material.map) {
+          mesh.material.map.needsUpdate = true;
+          mesh.material.needsUpdate = true;
+        }
+      }
+
+      // 1. 丸いプロフィール写真の描画
+      function drawAvatar() {
+        const canvas = document.querySelector('#canvas-avatar');
+        const ctx = canvas.getContext('2d');
+        const size = 512;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          ctx.clearRect(0, 0, size, size);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+
+          const minSide = Math.min(img.width, img.height);
+          const sx = (img.width - minSide) / 2;
+          const sy = (img.height - minSide) / 2;
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+          ctx.restore();
+
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.lineWidth = 10;
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
+          ctx.stroke();
+
+          refreshMaterial('#el-avatar');
+        };
+        img.src = './avatar.jpg';
+      }
+
+      // 2. ピル型ボタンの描画
+      function drawPillButton(canvasId, planeId, label) {
+        const canvas = document.querySelector(canvasId);
+        const ctx = canvas.getContext('2d');
+        const w = 640;
+        const h = 164;
+        const r = h / 2;
+
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.moveTo(r, 0);
+        ctx.lineTo(w - r, 0);
+        ctx.arc(w - r, r, r, -Math.PI / 2, Math.PI / 2);
+        ctx.lineTo(r, h);
+        ctx.arc(r, r, r, Math.PI / 2, -Math.PI / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#1A2639';
+        ctx.font = '600 54px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, w / 2, h / 2 + 2);
+
+        refreshMaterial(planeId);
+      }
+
+      // 3. 丸アイコンの描画
+      function drawCircleIcon(canvasId, planeId, type) {
+        const canvas = document.querySelector(canvasId);
+        const ctx = canvas.getContext('2d');
+        const size = 256;
+        const cx = size / 2;
+        const cy = size / 2;
+
+        ctx.clearRect(0, 0, size, size);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(cx, cy, size / 2 - 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1A2639';
+        ctx.strokeStyle = '#1A2639';
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (type === 'chat') {
+          ctx.beginPath();
+          ctx.ellipse(cx, cy - 6, 48, 38, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(cx - 26, cy + 24);
+          ctx.lineTo(cx - 42, cy + 44);
+          ctx.lineTo(cx - 8, cy + 30);
+          ctx.fill();
+        } else if (type === 'phone') {
+          ctx.beginPath();
+          ctx.arc(cx + 12, cy - 12, 46, Math.PI * 0.65, Math.PI * 1.35);
+          ctx.lineWidth = 18;
+          ctx.stroke();
+        } else if (type === 'video') {
+          ctx.fillRect(cx - 46, cy - 26, 62, 52);
+          ctx.beginPath();
+          ctx.moveTo(cx + 20, cy - 10);
+          ctx.lineTo(cx + 46, cy - 24);
+          ctx.lineTo(cx + 46, cy + 24);
+          ctx.lineTo(cx + 20, cy + 10);
+          ctx.closePath();
+          ctx.fill();
+        } else if (type === 'mail') {
+          ctx.strokeRect(cx - 44, cy - 30, 88, 60);
+          ctx.beginPath();
+          ctx.moveTo(cx - 44, cy - 30);
+          ctx.lineTo(cx, cy + 6);
+          ctx.lineTo(cx + 44, cy - 30);
+          ctx.stroke();
+        }
+
+        refreshMaterial(planeId);
+      }
+
+      // ページ読み込み直後にキャンバスへ描画開始
+      drawAvatar();
+      drawPillButton('#canvas-website', '#el-website', 'Website');
+      drawPillButton('#canvas-twitter', '#el-twitter', 'Twitter');
+      drawCircleIcon('#canvas-icon1', '#el-icon1', 'chat');
+      drawCircleIcon('#canvas-icon2', '#el-icon2', 'phone');
+      drawCircleIcon('#canvas-icon3', '#el-icon3', 'video');
+      drawCircleIcon('#canvas-icon4', '#el-icon4', 'mail');
+
+      window.addEventListener('DOMContentLoaded', () => {
+        const scene = document.querySelector('a-scene');
+        const video = document.querySelector('#card-video');
+
+        // A-Frameのロード完了後にもう一度確実にテクスチャを更新する
+        scene.addEventListener('loaded', () => {
+          setTimeout(() => {
+            refreshMaterial('#el-avatar');
+            refreshMaterial('#el-website');
+            refreshMaterial('#el-twitter');
+            refreshMaterial('#el-icon1');
+            refreshMaterial('#el-icon2');
+            refreshMaterial('#el-icon3');
+            refreshMaterial('#el-icon4');
+            refreshMaterial('#el-video');
+          }, 500);
+        });
+
+        const startPlayback = () => {
+          if (video) {
+            video.muted = true;
+            video.play().then(() => refreshMaterial('#el-video')).catch(() => {});
+          }
+        };
+        window.addEventListener('touchstart', startPlayback, { passive: true });
+        window.addEventListener('click', startPlayback);
+
+        document.querySelectorAll('.clickable').forEach((el) => {
+          el.addEventListener('click', () => {
+            const url = el.getAttribute('data-url');
+            if (url) window.open(url, '_blank');
+          });
+        });
+
+        const target = document.querySelector('#card-target');
+        const overlay = document.querySelector('#ui-overlay');
+
+        target.addEventListener('targetFound', () => {
+          overlay.style.opacity = '0';
+          refreshMaterial('#el-avatar');
+          refreshMaterial('#el-website');
+          refreshMaterial('#el-twitter');
+          if (video) {
+            video.muted = true;
+            video.play().then(() => refreshMaterial('#el-video')).catch(() => {});
+          }
+        });
+
+        target.addEventListener('targetLost', () => {
+          overlay.style.opacity = '1';
+          if (video) video.pause();
+        });
+      });
+    </script>
+  </body>
+</html>
