@@ -4,10 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>MARI | Product Designer AR</title>
-    <!-- A-FrameとMindARに加え、3Dモデルのアニメーションを動かすための extras スクリプトを追加 -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.2.0/dist/aframe-extras.min.js"></script>
     <style>
       body {
         margin: 0;
@@ -42,6 +40,165 @@
         pointer-events: none;
       }
     </style>
+
+    <script>
+      // 1. 丸いプロフィール写真コンポーネント
+      AFRAME.registerComponent('circular-avatar', {
+        schema: { src: { type: 'string' } },
+        init: function () {
+          const el = this.el;
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+
+            const minSide = Math.min(img.width, img.height);
+            const sx = (img.width - minSide) / 2;
+            const sy = (img.height - minSide) / 2;
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            el.setObject3D('mesh', new THREE.Mesh(
+              new THREE.PlaneGeometry(0.28, 0.28),
+              new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.05 })
+            ));
+          };
+          img.src = this.data.src;
+        }
+      });
+
+      // 2. ピル型ボタンコンポーネント
+      AFRAME.registerComponent('pill-button', {
+        schema: { label: { type: 'string' } },
+        init: function () {
+          const w = 640;
+          const h = 164;
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+
+          const r = h / 2;
+          ctx.fillStyle = '#FFFFFF';
+          ctx.beginPath();
+          ctx.moveTo(r, 0);
+          ctx.lineTo(w - r, 0);
+          ctx.arc(w - r, r, r, -Math.PI / 2, Math.PI / 2);
+          ctx.lineTo(r, h);
+          ctx.arc(r, r, r, Math.PI / 2, -Math.PI / 2);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#1A2639';
+          ctx.font = '600 52px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(this.data.label, w / 2, h / 2 + 2);
+
+          const texture = new THREE.CanvasTexture(canvas);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          this.el.setObject3D('mesh', new THREE.Mesh(
+            new THREE.PlaneGeometry(0.75, 0.18),
+            new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.05 })
+          ));
+        }
+      });
+
+      // 3. 丸アイコンコンポーネント
+      AFRAME.registerComponent('circle-icon', {
+        schema: { type: { type: 'string' } },
+        init: function () {
+          const size = 256;
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#1A2639';
+          ctx.strokeStyle = '#1A2639';
+          ctx.lineWidth = 10;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          const cx = size / 2;
+          const cy = size / 2;
+          const type = this.data.type;
+
+          if (type === 'chat') {
+            ctx.beginPath();
+            ctx.ellipse(cx, cy - 6, 48, 38, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx - 26, cy + 24);
+            ctx.lineTo(cx - 42, cy + 44);
+            ctx.lineTo(cx - 8, cy + 30);
+            ctx.fill();
+          } else if (type === 'phone') {
+            ctx.beginPath();
+            ctx.arc(cx + 12, cy - 12, 46, Math.PI * 0.65, Math.PI * 1.35);
+            ctx.lineWidth = 18;
+            ctx.stroke();
+          } else if (type === 'video') {
+            ctx.fillRect(cx - 46, cy - 26, 62, 52);
+            ctx.beginPath();
+            ctx.moveTo(cx + 20, cy - 10);
+            ctx.lineTo(cx + 46, cy - 24);
+            ctx.lineTo(cx + 46, cy + 24);
+            ctx.lineTo(cx + 20, cy + 10);
+            ctx.closePath();
+            ctx.fill();
+          } else if (type === 'mail') {
+            ctx.strokeRect(cx - 44, cy - 30, 88, 60);
+            ctx.beginPath();
+            ctx.moveTo(cx - 44, cy - 30);
+            ctx.lineTo(cx, cy + 6);
+            ctx.lineTo(cx + 44, cy - 30);
+            ctx.stroke();
+          }
+
+          const texture = new THREE.CanvasTexture(canvas);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          this.el.setObject3D('mesh', new THREE.Mesh(
+            new THREE.PlaneGeometry(0.22, 0.22),
+            new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.05 })
+          ));
+        }
+      });
+
+      // 4. 動画パネルコンポーネント
+      AFRAME.registerComponent('video-screen', {
+        init: function () {
+          const video = document.querySelector('#hidden-video');
+          const texture = new THREE.VideoTexture(video);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          this.el.setObject3D('mesh', new THREE.Mesh(
+            new THREE.PlaneGeometry(1.0, 0.57),
+            new THREE.MeshBasicMaterial({ map: texture })
+          ));
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="ui-overlay">TAP SCREEN &amp; POINT AT CARD</div>
@@ -66,27 +223,11 @@
       cursor="rayOrigin: mouse"
       raycaster="objects: .clickable"
     >
-      <a-assets>
-        <!-- 3Dの猫モデルを事前にロード（GitHubの cat.glb） -->
-      </a-assets>
-
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- 名刺本体 (幅: 1.0, 高さ: 0.57) -->
+      <!-- 名刺本体 -->
       <a-entity id="card-target" mindar-image-target="targetIndex: 0">
         
-        <!-- =【新機能】ランダムに歩き・毛づくろいする黒猫 = -->
-        <!-- positionやscaleは猫のサイズに合わせて微調整します（ここでは名刺の左下付近からスタート） -->
-        <a-entity
-          id="black-cat"
-          gltf-model="#cat-model"
-          position="-0.6 -0.5 0.05"
-          scale="0.12 0.12 0.12"
-          rotation="90 0 0"
-          animation-mixer="clip: walk; loop: repeat; timeScale: 1;"
-          shadow="cast: true; receive: false;"
-        ></a-entity>
-
         <!-- 1. 名刺の右側：プロフィール統合エリア -->
         <a-entity position="0.95 0.08 0.02">
           <a-plane
@@ -94,18 +235,17 @@
             height="0.38"
             color="#1A2639"
             opacity="0.85"
-            material="roughness: 1; metalness: 0;"
+            material="shader: flat;"
             position="0.22 0 -0.01"
           ></a-plane>
 
-          <a-plane
-            id="avatar-plane"
+          <!-- 丸い顔写真 -->
+          <a-entity
             position="-0.15 0 0.01"
-            width="0.28"
-            height="0.28"
-            material="transparent: true; alphaTest: 0.05;"
-          ></a-plane>
+            circular-avatar="src: ./avatar.jpg"
+          ></a-entity>
 
+          <!-- 名前 と 肩書き -->
           <a-entity position="0.08 0 0.01">
             <a-text
               value="MARI"
@@ -127,220 +267,20 @@
         </a-entity>
 
         <!-- 2. 名刺の下：名刺サイズの動画 -->
-        <a-plane
-          id="video-plane"
+        <a-entity
           position="0 -0.56 0.02"
-          width="1.0"
-          height="0.57"
-          material="shader: flat; color: #FFFFFF;"
-        ></a-plane>
+          video-screen
+        ></a-entity>
 
         <!-- 3. 動画の右側：Website / Twitter ボタン -->
-        <a-plane
-          id="btn-website"
+        <a-entity
           class="clickable"
           position="0.95 -0.42 0.03"
-          width="0.75"
-          height="0.18"
-          material="transparent: true; alphaTest: 0.05;"
+          pill-button="label: Website"
           data-url="https://marimo-ux.github.io/ar-card/"
-        ></a-plane>
+        ></a-entity>
 
-        <a-plane
-          id="btn-twitter"
+        <a-entity
           class="clickable"
           position="0.95 -0.66 0.03"
-          width="0.75"
-          height="0.18"
-          material="transparent: true; alphaTest: 0.05;"
-          data-url="https://x.com/"
-        ></a-plane>
-
-        <!-- 4. 最下部：コンタクトアイコン4つ -->
-        <a-plane
-          id="icon-1"
-          class="clickable"
-          position="-0.36 -1.02 0.03"
-          width="0.22"
-          height="0.22"
-          material="transparent: true; alphaTest: 0.05;"
-          data-url="sms:"
-        ></a-plane>
-
-        <a-plane
-          id="icon-2"
-          class="clickable"
-          position="-0.12 -1.02 0.03"
-          width="0.22"
-          height="0.22"
-          material="transparent: true; alphaTest: 0.05;"
-          data-url="tel:"
-        ></a-plane>
-
-        <a-plane
-          id="icon-3"
-          class="clickable"
-          position="0.12 -1.02 0.03"
-          width="0.22"
-          height="0.22"
-          material="transparent: true; alphaTest: 0.05;"
-          data-url="https://cal.com/"
-        ></a-plane>
-
-        <a-plane
-          id="icon-4"
-          class="clickable"
-          position="0.36 -1.02 0.03"
-          width="0.22"
-          height="0.22"
-          material="transparent: true; alphaTest: 0.05;"
-          data-url="mailto:hello@example.com"
-        ></a-plane>
-
-      </a-entity>
-    </a-scene>
-
-    <script>
-      function createCircularAvatar(imgSrc, targetId) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          const size = 512;
-          const canvas = document.createElement('canvas');
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext('2d');
-
-          ctx.beginPath();
-          ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
-          ctx.closePath();
-          ctx.clip();
-
-          const minSide = Math.min(img.width, img.height);
-          const sx = (img.width - minSide) / 2;
-          const sy = (img.height - minSide) / 2;
-          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-          ctx.lineWidth = 10;
-          ctx.stroke();
-
-          const texture = new THREE.CanvasTexture(canvas);
-          texture.colorSpace = THREE.SRGBColorSpace;
-          const el = document.querySelector(targetId);
-          el.getObject3D('mesh').material.map = texture;
-          el.getObject3D('mesh').material.needsUpdate = true;
-        };
-        img.src = imgSrc;
-      }
-
-      function createPillButton(label, targetId) {
-        const w = 640;
-        const h = 164;
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-
-        const r = h / 2;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.moveTo(r, 0);
-        ctx.lineTo(w - r, 0);
-        ctx.arc(w - r, r, r, -Math.PI / 2, Math.PI / 2);
-        ctx.lineTo(r, h);
-        ctx.arc(r, r, r, Math.PI / 2, -Math.PI / 2);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = '#1A2639';
-        ctx.font = '600 52px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, w / 2, h / 2 + 2);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.colorSpace = THREE.SRGBColorSpace;
-        const el = document.querySelector(targetId);
-        el.getObject3D('mesh').material.map = texture;
-        el.getObject3D('mesh').material.needsUpdate = true;
-      }
-
-      function createCircleIcon(type, targetId) {
-        const size = 256;
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#1A2639';
-        ctx.strokeStyle = '#1A2639';
-        ctx.lineWidth = 10;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        const cx = size / 2;
-        const cy = size / 2;
-
-        if (type === 'chat') {
-          ctx.beginPath();
-          ctx.ellipse(cx, cy - 6, 48, 38, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.moveTo(cx - 26, cy + 24);
-          ctx.lineTo(cx - 42, cy + 44);
-          ctx.lineTo(cx - 8, cy + 30);
-          ctx.fill();
-        } else if (type === 'phone') {
-          ctx.beginPath();
-          ctx.arc(cx + 12, cy - 12, 46, Math.PI * 0.65, Math.PI * 1.35);
-          ctx.lineWidth = 18;
-          ctx.stroke();
-        } else if (type === 'video') {
-          ctx.fillRect(cx - 46, cy - 26, 62, 52);
-          ctx.beginPath();
-          ctx.moveTo(cx + 20, cy - 10);
-          ctx.lineTo(cx + 46, cy - 24);
-          ctx.lineTo(cx + 46, cy + 24);
-          ctx.lineTo(cx + 20, cy + 10);
-          ctx.closePath();
-          ctx.fill();
-        } else if (type === 'mail') {
-          ctx.strokeRect(cx - 44, cy - 30, 88, 60);
-          ctx.beginPath();
-          ctx.moveTo(cx - 44, cy - 30);
-          ctx.lineTo(cx, cy + 6);
-          ctx.lineTo(cx + 44, cy - 30);
-          ctx.stroke();
-        }
-
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.colorSpace = THREE.SRGBColorSpace;
-        const el = document.querySelector(targetId);
-        el.getObject3D('mesh').material.map = texture;
-        el.getObject3D('mesh').material.needsUpdate = true;
-      }
-
-      window.addEventListener('DOMContentLoaded', () => {
-        const scene = document.querySelector('a-scene');
-        const video = document.querySelector('#hidden-video');
-        let isCardFound = false;
-
-        scene.addEventListener('loaded', () => {
-          createCircularAvatar('./avatar.jpg', '#avatar-plane');
-          createPillButton('Website', '#btn-website');
-          createPillButton('Twitter', '#btn-twitter');
-          createCircleIcon('chat', '#icon-1');
-          createCircleIcon('phone', '#icon-2');
-          createCircleIcon('video', '#icon-3');
-          createCircleIcon('mail', '#icon-4');
-
-          const videoTexture = new THREE.VideoTexture(video);
-          videoTexture.colorSpace = THREE.SRGBColorSpace;
-          videoTexture.minFilter = THREE.LinearFilter;
-          videoTexture
+          pill-button
