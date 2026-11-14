@@ -44,7 +44,6 @@
   <body>
     <div id="ui-overlay">TAP SCREEN &amp; POINT AT CARD</div>
 
-    <!-- A-Frameが直接参照するキャンバスと動画 -->
     <div class="hidden-assets">
       <canvas id="canvas-avatar" width="512" height="512"></canvas>
       <canvas id="canvas-website" width="640" height="164"></canvas>
@@ -76,47 +75,47 @@
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- 名刺本体 -->
+      <!-- 名刺本体 (幅: 1.0, 高さ: 0.57) -->
       <a-entity id="card-target" mindar-image-target="targetIndex: 0">
         
-        <!-- 1. 名刺の右側：プロフィール統合エリア -->
-        <a-entity position="0.95 0.08 0.02">
-          <!-- ダークネイビーの半透明背景 -->
+        <!-- 1. 名刺のすぐ右側：プロフィールエリア（縦画面でも見切れないようコンパクト化） -->
+        <a-entity position="0.56 0.04 0.02">
+          <!-- ダークネイビーの座布団（左端が名刺の右端にピタッと揃う位置） -->
           <a-plane
-            width="1.05"
-            height="0.38"
+            width="0.72"
+            height="0.30"
             color="#1A2639"
-            opacity="0.88"
+            opacity="0.90"
             material="shader: flat;"
-            position="0.24 0 -0.01"
+            position="0.36 0 -0.01"
           ></a-plane>
 
           <!-- 丸い顔写真 -->
           <a-plane
             id="el-avatar"
-            position="-0.15 0 0.01"
-            width="0.28"
-            height="0.28"
+            position="0.14 0 0.01"
+            width="0.21"
+            height="0.21"
             material="src: #canvas-avatar; shader: flat; transparent: true; alphaTest: 0.05;"
           ></a-plane>
 
           <!-- 名前 と 肩書き -->
-          <a-entity position="0.06 0 0.01">
+          <a-entity position="0.28 0 0.01">
             <a-text
               value="MARI"
-              position="0 0.05 0"
+              position="0 0.04 0"
               color="#FFFFFF"
-              width="1.5"
+              width="1.05"
               font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-              letter-spacing="4"
+              letter-spacing="3"
             ></a-text>
             <a-text
               value="PRODUCT DESIGNER"
-              position="0 -0.05 0"
+              position="0 -0.04 0"
               color="#CBD5E1"
-              width="0.8"
+              width="0.52"
               font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-              letter-spacing="2"
+              letter-spacing="1"
             ></a-text>
           </a-entity>
         </a-entity>
@@ -124,19 +123,19 @@
         <!-- 2. 名刺の下：名刺サイズの動画 -->
         <a-plane
           id="el-video"
-          position="0 -0.56 0.02"
+          position="0 -0.54 0.02"
           width="1.0"
           height="0.57"
           material="src: #card-video; shader: flat;"
         ></a-plane>
 
-        <!-- 3. 動画の右側：Website / Twitter ボタン -->
+        <!-- 3. 動画のすぐ右側：Website / Twitter ボタン（座布団と同じ横幅・左端に揃える） -->
         <a-plane
           id="el-website"
           class="clickable"
-          position="0.95 -0.42 0.03"
-          width="0.75"
-          height="0.18"
+          position="0.92 -0.41 0.03"
+          width="0.72"
+          height="0.17"
           material="src: #canvas-website; shader: flat; transparent: true; alphaTest: 0.05;"
           data-url="https://marimo-ux.github.io/ar-card/"
         ></a-plane>
@@ -144,18 +143,18 @@
         <a-plane
           id="el-twitter"
           class="clickable"
-          position="0.95 -0.66 0.03"
-          width="0.75"
-          height="0.18"
+          position="0.92 -0.64 0.03"
+          width="0.72"
+          height="0.17"
           material="src: #canvas-twitter; shader: flat; transparent: true; alphaTest: 0.05;"
           data-url="https://x.com/"
         ></a-plane>
 
-        <!-- 4. 最下部：コンタクトアイコン4つ -->
+        <!-- 4. 最下部：コンタクトアイコン4つ（全体の横幅の中央バランスに配置） -->
         <a-plane
           id="el-icon1"
           class="clickable"
-          position="-0.36 -1.02 0.03"
+          position="-0.22 -1.00 0.03"
           width="0.22"
           height="0.22"
           material="src: #canvas-icon1; shader: flat; transparent: true; alphaTest: 0.05;"
@@ -165,7 +164,7 @@
         <a-plane
           id="el-icon2"
           class="clickable"
-          position="-0.12 -1.02 0.03"
+          position="0.06 -1.00 0.03"
           width="0.22"
           height="0.22"
           material="src: #canvas-icon2; shader: flat; transparent: true; alphaTest: 0.05;"
@@ -175,7 +174,7 @@
         <a-plane
           id="el-icon3"
           class="clickable"
-          position="0.12 -1.02 0.03"
+          position="0.34 -1.00 0.03"
           width="0.22"
           height="0.22"
           material="src: #canvas-icon3; shader: flat; transparent: true; alphaTest: 0.05;"
@@ -185,7 +184,7 @@
         <a-plane
           id="el-icon4"
           class="clickable"
-          position="0.36 -1.02 0.03"
+          position="0.62 -1.00 0.03"
           width="0.22"
           height="0.22"
           material="src: #canvas-icon4; shader: flat; transparent: true; alphaTest: 0.05;"
@@ -196,7 +195,6 @@
     </a-scene>
 
     <script>
-      // テクスチャをA-Frameに強制再描画させるヘルパー
       function refreshMaterial(planeId) {
         const el = document.querySelector(planeId);
         if (!el) return;
@@ -207,7 +205,6 @@
         }
       }
 
-      // 1. 丸いプロフィール写真の描画
       function drawAvatar() {
         const canvas = document.querySelector('#canvas-avatar');
         const ctx = canvas.getContext('2d');
@@ -240,7 +237,6 @@
         img.src = './avatar.jpg';
       }
 
-      // 2. ピル型ボタンの描画
       function drawPillButton(canvasId, planeId, label) {
         const canvas = document.querySelector(canvasId);
         const ctx = canvas.getContext('2d');
@@ -268,7 +264,6 @@
         refreshMaterial(planeId);
       }
 
-      // 3. 丸アイコンの描画
       function drawCircleIcon(canvasId, planeId, type) {
         const canvas = document.querySelector(canvasId);
         const ctx = canvas.getContext('2d');
@@ -298,10 +293,16 @@
           ctx.lineTo(cx - 8, cy + 30);
           ctx.fill();
         } else if (type === 'phone') {
+          // 受話器の形をくっきり描画
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(-Math.PI / 4);
           ctx.beginPath();
-          ctx.arc(cx + 12, cy - 12, 46, Math.PI * 0.65, Math.PI * 1.35);
-          ctx.lineWidth = 18;
-          ctx.stroke();
+          ctx.roundRect(-42, -16, 24, 32, 8);
+          ctx.roundRect(18, -16, 24, 32, 8);
+          ctx.fillRect(-26, -6, 52, 16);
+          ctx.fill();
+          ctx.restore();
         } else if (type === 'video') {
           ctx.fillRect(cx - 46, cy - 26, 62, 52);
           ctx.beginPath();
@@ -323,7 +324,6 @@
         refreshMaterial(planeId);
       }
 
-      // ページ読み込み直後にキャンバスへ描画開始
       drawAvatar();
       drawPillButton('#canvas-website', '#el-website', 'Website');
       drawPillButton('#canvas-twitter', '#el-twitter', 'Twitter');
@@ -336,7 +336,6 @@
         const scene = document.querySelector('a-scene');
         const video = document.querySelector('#card-video');
 
-        // A-Frameのロード完了後にもう一度確実にテクスチャを更新する
         scene.addEventListener('loaded', () => {
           setTimeout(() => {
             refreshMaterial('#el-avatar');
