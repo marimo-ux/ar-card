@@ -1,393 +1,982 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>MARI | Product Designer AR</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      }
-      #ui-overlay {
-        position: fixed;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 10;
-        background: rgba(26, 38, 57, 0.85);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        color: #ffffff;
-        padding: 10px 20px;
-        border-radius: 999px;
-        font-size: 12px;
-        letter-spacing: 0.08em;
-        white-space: nowrap;
-        pointer-events: none;
-        transition: opacity 0.4s ease;
-      }
-      .hidden-assets {
-        position: fixed;
-        top: -9999px;
-        left: -9999px;
-        width: 1px;
-        height: 1px;
-        opacity: 0.01;
-        pointer-events: none;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="ui-overlay">TAP SCREEN &amp; POINT AT CARD</div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>MARI | Product Designer — AR Business Card</title>
 
-    <div class="hidden-assets">
-      <canvas id="canvas-avatar" width="512" height="512"></canvas>
-      <canvas id="canvas-website" width="480" height="140"></canvas>
-      <canvas id="canvas-twitter" width="480" height="140"></canvas>
-      <canvas id="canvas-icon1" width="256" height="256"></canvas>
-      <canvas id="canvas-icon2" width="256" height="256"></canvas>
-      <canvas id="canvas-icon3" width="256" height="256"></canvas>
-      <canvas id="canvas-icon4" width="256" height="256"></canvas>
-      <video
-        id="card-video"
-        src="./demo.mp4"
-        preload="auto"
-        loop
-        muted
-        playsinline
-        webkit-playsinline
-        crossorigin="anonymous"
-      ></video>
+  <!-- A-Frame & MindAR -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    :root {
+      /* 共通の横幅（プロフィール・動画・下部ナビの左右幅を完全統一） */
+      --ui-width: min(90vw, 400px);
+      --radius-lg: 32px;
+      --radius-md: 24px;
+      --navy: #16223b;
+      --navy-muted: rgba(22, 34, 59, 0.72);
+      --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #000;
+      color: var(--navy);
+    }
+
+    /* MindAR カメラ映像とキャンバスを背面いっぱいに配置 */
+    a-scene {
+      position: fixed !important;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: 1;
+    }
+
+    /* =========================================
+       厚みのある乳白色＋淡いラベンダーのすりガラス
+       ========================================= */
+    .lavender-glass {
+      position: relative;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.62) 0%,
+        rgba(241, 236, 255, 0.50) 52%,
+        rgba(222, 212, 252, 0.56) 100%
+      );
+      backdrop-filter: blur(20px) saturate(135%);
+      -webkit-backdrop-filter: blur(20px) saturate(135%);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      box-shadow:
+        /* 外側の柔らかい浮遊影 */
+        0 14px 34px rgba(26, 20, 56, 0.18),
+        0 4px 12px rgba(26, 20, 56, 0.08),
+        /* 上辺・左辺の細い白い反射光 */
+        inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.88),
+        /* 右辺・下辺の淡い紫の反射光 */
+        inset -1.5px -1.5px 2px rgba(178, 156, 245, 0.55),
+        /* 内側のガラスの厚みハイライト */
+        inset 0 0 18px rgba(255, 255, 255, 0.32);
+    }
+
+    /* ガラス縁の繊細な光沢リング（操作を邪魔しない） */
+    .lavender-glass::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 255, 255, 0.1) 45%,
+        rgba(186, 164, 255, 0.75) 100%
+      );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* =========================================
+       画面固定UIレイヤー（4層構造）
+       ========================================= */
+    .ui-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: max(14px, env(safe-area-inset-top));
+      padding-bottom: max(14px, env(safe-area-inset-bottom));
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    /* 上から順にふわっと出るアニメーション制御 */
+    .reveal-item {
+      width: var(--ui-width);
+      opacity: 0;
+      transform: translateY(14px) scale(0.985);
+      transition:
+        opacity 0.65s var(--ease-out-expo),
+        transform 0.65s var(--ease-out-expo);
+      pointer-events: auto;
+    }
+
+    .ui-shell.is-visible .reveal-1 {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition-delay: 0.05s;
+    }
+
+    .ui-shell.is-visible .reveal-2 {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition-delay: 0.22s;
+    }
+
+    .ui-shell.is-visible .reveal-3 {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition-delay: 0.38s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal-item {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+    }
+
+    /* =========================================
+       1. 上部プロフィール
+       ========================================= */
+    .profile-card {
+      border-radius: var(--radius-lg);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .profile-card:active {
+      transform: scale(0.985);
+      filter: brightness(1.03);
+    }
+
+    .profile-avatar {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 12px rgba(22, 34, 59, 0.16);
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .profile-name {
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: var(--navy);
+      line-height: 1.2;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    .profile-role {
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: var(--navy-muted);
+      text-transform: uppercase;
+    }
+
+    /* =========================================
+       2. 中央：実物の名刺を見せるクリア空間
+       （一般的な名刺比率 91x55mm ≒ 1.65:1 の余白を確保）
+       ========================================= */
+    .card-viewport-spacer {
+      flex: 1;
+      width: var(--ui-width);
+      min-height: 120px;
+      max-height: 36vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .scan-hint {
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      color: rgba(255, 255, 255, 0.92);
+      background: rgba(22, 34, 59, 0.42);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      transition: opacity 0.4s ease;
+    }
+
+    .scan-hint.is-hidden {
+      opacity: 0;
+    }
+
+    /* 下半分グループ（16:9動画 ＋ 下部ナビ） */
+    .bottom-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    /* =========================================
+       3. 動画プレーヤー（正確な 16:9）
+       ========================================= */
+    .video-card {
+      border-radius: var(--radius-md);
+      aspect-ratio: 16 / 9;
+      width: var(--ui-width);
+      overflow: hidden;
+      position: relative;
+      padding: 0;
+    }
+
+    .video-element {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: rgba(24, 28, 48, 0.25);
+      border-radius: inherit;
+    }
+
+    /* 動画未設定時のプレースホルダー */
+    .video-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-align: center;
+      padding: 16px;
+      pointer-events: none;
+    }
+
+    .video-placeholder small {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--navy-muted);
+    }
+
+    /* 中央再生ボタン（プレーヤー内オーバーレイ） */
+    .video-center-play {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      background: rgba(235, 228, 255, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 20px rgba(22, 34, 59, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: opacity 0.25s ease, transform 0.2s ease;
+      z-index: 3;
+    }
+
+    .video-center-play:active {
+      transform: translate(-50%, -50%) scale(0.93);
+    }
+
+    .video-center-play.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* 16:9枠内に重ねる下部コントロールバー */
+    .video-controls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 18px 14px 10px;
+      background: linear-gradient(to top, rgba(16, 22, 42, 0.62) 0%, rgba(16, 22, 42, 0) 100%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 3;
+    }
+
+    .vc-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .vc-time {
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      color: rgba(255, 255, 255, 0.92);
+      flex-shrink: 0;
+    }
+
+    .vc-progress {
+      flex: 1;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.35);
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .vc-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #fff;
+      border-radius: inherit;
+    }
+
+    /* =========================================
+       4. 下部ナビゲーション（3操作を1枚のトレーに集約）
+       ========================================= */
+    .nav-tray {
+      border-radius: var(--radius-lg);
+      padding: 8px 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: center;
+    }
+
+    .nav-item {
+      appearance: none;
+      background: transparent;
+      border: none;
+      border-radius: 20px;
+      min-height: 54px;
+      min-width: 44px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: var(--navy);
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.16s ease, background-color 0.16s ease;
+    }
+
+    .nav-item:hover {
+      background-color: rgba(255, 255, 255, 0.22);
+    }
+
+    .nav-item:active {
+      background-color: rgba(255, 255, 255, 0.38);
+      transform: scale(0.96);
+    }
+
+    .nav-item:focus-visible,
+    .profile-card:focus-visible,
+    .sheet-close:focus-visible,
+    .social-link-row:focus-visible {
+      outline: 2px solid var(--navy);
+      outline-offset: 2px;
+    }
+
+    .nav-item svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--navy);
+      stroke-width: 1.85;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--navy);
+    }
+
+    /* =========================================
+       モーダル / ボトムシート（Social & About Me）
+       ========================================= */
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: rgba(16, 22, 42, 0.28);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s ease;
+    }
+
+    .sheet-backdrop.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .glass-sheet {
+      width: var(--ui-width);
+      border-radius: var(--radius-lg);
+      padding: 20px 18px;
+      transform: translateY(20px);
+      transition: transform 0.32s var(--ease-out-expo);
+    }
+
+    .sheet-backdrop.is-open .glass-sheet {
+      transform: translateY(0);
+    }
+
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .sheet-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+
+    .sheet-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.45);
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .social-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .social-link-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      min-height: 48px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.42);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      color: var(--navy);
+      text-decoration: none;
+      transition: transform 0.16s ease, background-color 0.16s ease;
+    }
+
+    .social-link-row:active {
+      transform: scale(0.98);
+      background: rgba(255, 255, 255, 0.68);
+    }
+
+    .social-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(22, 34, 59, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--navy);
+    }
+
+    .social-text {
+      font-size: 13.5px;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--navy);
+      flex: 1;
+    }
+
+    .about-body {
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: var(--navy);
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================
+       AR シーン（実物の名刺トラッキング）
+       ※ 3Dキャラクターとシャボン玉は除外済み
+       ※ ターゲット(.mind)のパスは下のCONFIGで管理
+       ========================================================= -->
+  <a-scene
+    id="ar-scene"
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: no; uiScanning: no; uiError: no;"
+    color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights: true, alpha: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- 名刺トラッキングアンカー（必要に応じここに3D要素を追加可能） -->
+    <a-entity id="card-target" mindar-image-target="targetIndex: 0"></a-entity>
+  </a-scene>
+
+  <!-- =========================================================
+       画面固定UI（4層構造・左右幅統一・順次フェードイン）
+       ========================================================= -->
+  <main id="ui-shell" class="ui-shell" aria-label="MARI AR Business Card Interface">
+
+    <!-- 1. 上部プロフィール -->
+    <header
+      id="profile-trigger"
+      class="lavender-glass profile-card reveal-item reveal-1"
+      role="button"
+      tabindex="0"
+      aria-label="Open About MARI">
+      <img
+        id="profile-img"
+        class="profile-avatar"
+        src="./profile.jpg"
+        alt="MARI portrait" />
+      <div class="profile-info">
+        <h1 class="profile-name">MARI</h1>
+        <p class="profile-role">PRODUCT DESIGNER</p>
+      </div>
+    </header>
+
+    <!-- 2. 中央：実物の名刺を見せるクリア空間 -->
+    <div class="card-viewport-spacer" aria-hidden="true">
+      <span id="scan-hint" class="scan-hint">Point camera at business card</span>
     </div>
 
-    <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.001;"
-      color-space="sRGB"
-      renderer="colorManagement: true"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-      cursor="rayOrigin: mouse"
-      raycaster="objects: .clickable"
-    >
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    <!-- 下部グループ（3. 16:9動画 ＋ 4. ナビゲーション） -->
+    <div class="bottom-stack">
 
-      <!-- 【中央基準】物理の名刺 (幅: 1.0, 高さ: 0.57, 中心 y = 0) -->
-      <a-entity id="card-target" mindar-image-target="targetIndex: 0">
-        
-        <!-- ========================================== -->
-        <!-- 【上エリア：楽しく・パーソナル】 (y = +0.47) -->
-        <!-- ========================================== -->
-        <a-entity position="0 0.47 0.02">
-          <!-- 名刺と同じ横幅(1.0)のダークネイビー背景 -->
-          <a-plane
-            width="1.0"
-            height="0.26"
-            color="#1A2639"
-            opacity="0.90"
-            material="shader: flat;"
-            position="0 0 -0.01"
-          ></a-plane>
+      <!-- 3. 動画プレーヤー（厳密な 16:9） -->
+      <section class="lavender-glass video-card reveal-item reveal-2" aria-label="Featured video">
+        <video
+          id="promo-video"
+          class="video-element"
+          playsinline
+          webkit-playsinline
+          preload="metadata"></video>
 
-          <!-- 左：丸い顔写真 -->
-          <a-plane
-            id="el-avatar"
-            position="-0.36 0 0.01"
-            width="0.19"
-            height="0.19"
-            material="src: #canvas-avatar; shader: flat; transparent: true; alphaTest: 0.05;"
-          ></a-plane>
+        <div id="video-placeholder" class="video-placeholder">
+          <span>Video Preview (16:9)</span>
+          <small>Set CONFIG.videoSrc in index.html</small>
+        </div>
 
-          <!-- 中央：名前と肩書き -->
-          <a-entity position="-0.22 0 0.01">
-            <a-text
-              value="MARI"
-              position="0 0.038 0"
-              color="#FFFFFF"
-              width="0.95"
-              font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-              letter-spacing="3"
-            ></a-text>
-            <a-text
-              value="PRODUCT DESIGNER"
-              position="0 -0.038 0"
-              color="#CBD5E1"
-              width="0.46"
-              font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-              letter-spacing="1"
-            ></a-text>
-          </a-entity>
+        <button
+          id="center-play-btn"
+          class="video-center-play"
+          type="button"
+          aria-label="Play video">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#16223b">
+            <polygon points="7,4 20,12 7,20"></polygon>
+          </svg>
+        </button>
 
-          <!-- 右：Website / X ミニボタン（上下2段） -->
-          <a-plane
-            id="el-website"
-            class="clickable"
-            position="0.31 0.052 0.02"
-            width="0.30"
-            height="0.084"
-            material="src: #canvas-website; shader: flat; transparent: true; alphaTest: 0.05;"
-            data-url="https://marimo-ux.github.io/ar-card/"
-          ></a-plane>
+        <div class="video-controls">
+          <button id="bar-play-btn" class="vc-btn" type="button" aria-label="Play or pause">
+            <svg id="bar-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="6,4 20,12 6,20"></polygon>
+            </svg>
+          </button>
+          <span id="vc-time" class="vc-time">0:00 / 0:00</span>
+          <div id="vc-progress" class="vc-progress" role="slider" aria-label="Seek video" tabindex="0">
+            <div id="vc-progress-fill" class="vc-progress-fill"></div>
+          </div>
+          <button id="mute-btn" class="vc-btn" type="button" aria-label="Toggle mute">
+            <svg id="mute-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          </button>
+        </div>
+      </section>
 
-          <a-plane
-            id="el-twitter"
-            class="clickable"
-            position="0.31 -0.052 0.02"
-            width="0.30"
-            height="0.084"
-            material="src: #canvas-twitter; shader: flat; transparent: true; alphaTest: 0.05;"
-            data-url="https://x.com/"
-          ></a-plane>
-        </a-entity>
+      <!-- 4. 下部ナビゲーション（1枚のガラストレーに3操作） -->
+      <nav class="lavender-glass nav-tray reveal-item reveal-3" aria-label="Primary navigation">
+        <!-- 1. Work：ブラウザウィンドウアイコン -->
+        <a id="nav-work" class="nav-item" href="#" target="_blank" rel="noopener noreferrer" aria-label="Work — App Showcase">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <circle cx="7" cy="6.5" r="0.6" fill="currentColor"></circle>
+            <circle cx="10" cy="6.5" r="0.6" fill="currentColor"></circle>
+          </svg>
+          <span class="nav-label">Work</span>
+        </a>
 
-        <!-- ========================================== -->
-        <!-- 【下エリア：情報・実用】 (y = -0.60 / -1.03) -->
-        <!-- ========================================== -->
-        <!-- 1. 名刺のすぐ下：ショーケース動画 (幅: 1.0, 高さ: 0.57) -->
-        <a-plane
-          id="el-video"
-          position="0 -0.60 0.02"
-          width="1.0"
-          height="0.57"
-          material="src: #card-video; shader: flat;"
-        ></a-plane>
+        <!-- 2. Social：吹き出しアイコン -->
+        <button id="nav-social" class="nav-item" type="button" aria-label="Social links" aria-haspopup="dialog" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+          </svg>
+          <span class="nav-label">Social</span>
+        </button>
 
-        <!-- 2. 最下部：コンタクトアイコン4つ（親指で押しやすい位置） -->
-        <a-plane
-          id="el-icon1"
-          class="clickable"
-          position="-0.38 -1.03 0.03"
-          width="0.20"
-          height="0.20"
-          material="src: #canvas-icon1; shader: flat; transparent: true; alphaTest: 0.05;"
-          data-url="sms:"
-        ></a-plane>
+        <!-- 3. Contact：封筒アイコン -->
+        <a id="nav-contact" class="nav-item" href="#" aria-label="Contact MARI">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2.5"></rect>
+            <polyline points="3 7 12 13 21 7"></polyline>
+          </svg>
+          <span class="nav-label">Contact</span>
+        </a>
+      </nav>
 
-        <a-plane
-          id="el-icon2"
-          class="clickable"
-          position="-0.127 -1.03 0.03"
-          width="0.20"
-          height="0.20"
-          material="src: #canvas-icon2; shader: flat; transparent: true; alphaTest: 0.05;"
-          data-url="tel:"
-        ></a-plane>
+    </div>
+  </main>
 
-        <a-plane
-          id="el-icon3"
-          class="clickable"
-          position="0.127 -1.03 0.03"
-          width="0.20"
-          height="0.20"
-          material="src: #canvas-icon3; shader: flat; transparent: true; alphaTest: 0.05;"
-          data-url="https://cal.com/"
-        ></a-plane>
+  <!-- =========================================================
+       Social リンクパネル（ガラス調ボトムシート）
+       ========================================================= -->
+  <div id="social-backdrop" class="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="social-sheet-title">
+    <div class="lavender-glass glass-sheet">
+      <div class="sheet-header">
+        <h2 id="social-sheet-title" class="sheet-title">Social</h2>
+        <button id="social-close" class="sheet-close" type="button" aria-label="Close Social panel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div id="social-list" class="social-list"></div>
+    </div>
+  </div>
 
-        <a-plane
-          id="el-icon4"
-          class="clickable"
-          position="0.38 -1.03 0.03"
-          width="0.20"
-          height="0.20"
-          material="src: #canvas-icon4; shader: flat; transparent: true; alphaTest: 0.05;"
-          data-url="mailto:hello@example.com"
-        ></a-plane>
+  <!-- =========================================================
+       About Me パネル（プロフィールタップで開閉）
+       ========================================================= -->
+  <div id="about-backdrop" class="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="about-sheet-title">
+    <div class="lavender-glass glass-sheet">
+      <div class="sheet-header">
+        <h2 id="about-sheet-title" class="sheet-title">About MARI</h2>
+        <button id="about-close" class="sheet-close" type="button" aria-label="Close About panel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <p id="about-body" class="about-body"></p>
+    </div>
+  </div>
 
-      </a-entity>
-    </a-scene>
+  <script>
+    /**
+     * =========================================================
+     * 設定エリア（CONFIG）
+     * GitHubリポジトリ内の実ファイル名・URLに合わせてここだけ編集してください。
+     * 未設定（""）のSocial項目は自動的に非表示になります。
+     * =========================================================
+     */
+    const CONFIG = {
+      // MindAR ターゲットファイル（相対パス）
+      mindTargetSrc: "./targets.mind",
 
-    <script>
-      function refreshMaterial(planeId) {
-        const el = document.querySelector(planeId);
-        if (!el) return;
-        const mesh = el.getObject3D('mesh');
-        if (mesh && mesh.material && mesh.material.map) {
-          mesh.material.map.needsUpdate = true;
-          mesh.material.needsUpdate = true;
+      // プロフィール画像（相対パス）
+      profileImageSrc: "./profile.jpg",
+
+      // 16:9 動画ファイル（例: "./demo.mp4" / 未設定なら "" のまま）
+      videoSrc: "",
+
+      // Work ボタン（アプリ紹介サイトURL）
+      workUrl: "",
+
+      // Contact ボタン（例: "mailto:yourname@example.com"）
+      contactUrl: "",
+
+      // About Me（プロフィールタップ時に表示。未設定ならタップ無効）
+      aboutText: "",
+
+      // Social リンク（URLが空の項目は画面に表示されません）
+      socials: [
+        {
+          type: "x",
+          label: "Design & Building",
+          url: "" // 英語XアカウントのURLを入力
+        },
+        {
+          type: "x",
+          label: "デザインと個人開発",
+          url: "" // 日本語XアカウントのURLを入力
+        },
+        {
+          type: "note",
+          label: "開発の裏側とアメリカ市場UX",
+          url: "" // noteのURLを入力
         }
+      ]
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. アセット・リンク反映
+      const scene = document.getElementById("ar-scene");
+      if (CONFIG.mindTargetSrc) {
+        scene.setAttribute(
+          "mindar-image",
+          `imageTargetSrc: ${CONFIG.mindTargetSrc}; autoStart: true; uiLoading: no; uiScanning: no; uiError: no;`
+        );
       }
 
-      function drawAvatar() {
-        const canvas = document.querySelector('#canvas-avatar');
-        const ctx = canvas.getContext('2d');
-        const size = 512;
-
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          ctx.clearRect(0, 0, size, size);
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
-          ctx.closePath();
-          ctx.clip();
-
-          const minSide = Math.min(img.width, img.height);
-          const sx = (img.width - minSide) / 2;
-          const sy = (img.height - minSide) / 2;
-          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-          ctx.restore();
-
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-          ctx.lineWidth = 10;
-          ctx.beginPath();
-          ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
-          ctx.stroke();
-
-          refreshMaterial('#el-avatar');
-        };
-        img.src = './avatar.jpg';
+      const profileImg = document.getElementById("profile-img");
+      if (CONFIG.profileImageSrc) {
+        profileImg.src = CONFIG.profileImageSrc;
       }
 
-      function drawPillButton(canvasId, planeId, label) {
-        const canvas = document.querySelector(canvasId);
-        const ctx = canvas.getContext('2d');
-        const w = 480;
-        const h = 140;
-        const r = h / 2;
-
-        ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.moveTo(r, 0);
-        ctx.lineTo(w - r, 0);
-        ctx.arc(w - r, r, r, -Math.PI / 2, Math.PI / 2);
-        ctx.lineTo(r, h);
-        ctx.arc(r, r, r, Math.PI / 2, -Math.PI / 2);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = '#1A2639';
-        ctx.font = '600 52px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, w / 2, h / 2 + 2);
-
-        refreshMaterial(planeId);
+      const workLink = document.getElementById("nav-work");
+      if (CONFIG.workUrl) {
+        workLink.href = CONFIG.workUrl;
+      } else {
+        workLink.addEventListener("click", (e) => e.preventDefault());
       }
 
-      function drawCircleIcon(canvasId, planeId, type) {
-        const canvas = document.querySelector(canvasId);
-        const ctx = canvas.getContext('2d');
-        const size = 256;
-        const cx = size / 2;
-        const cy = size / 2;
-
-        ctx.clearRect(0, 0, size, size);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.arc(cx, cy, size / 2 - 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#1A2639';
-        ctx.strokeStyle = '#1A2639';
-        ctx.lineWidth = 10;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        if (type === 'chat') {
-          ctx.beginPath();
-          ctx.ellipse(cx, cy - 6, 48, 38, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.moveTo(cx - 26, cy + 24);
-          ctx.lineTo(cx - 42, cy + 44);
-          ctx.lineTo(cx - 8, cy + 30);
-          ctx.fill();
-        } else if (type === 'phone') {
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.rotate(-Math.PI / 4);
-          ctx.beginPath();
-          ctx.roundRect(-42, -16, 24, 32, 8);
-          ctx.roundRect(18, -16, 24, 32, 8);
-          ctx.fillRect(-26, -6, 52, 16);
-          ctx.fill();
-          ctx.restore();
-        } else if (type === 'video') {
-          ctx.fillRect(cx - 46, cy - 26, 62, 52);
-          ctx.beginPath();
-          ctx.moveTo(cx + 20, cy - 10);
-          ctx.lineTo(cx + 46, cy - 24);
-          ctx.lineTo(cx + 46, cy + 24);
-          ctx.lineTo(cx + 20, cy + 10);
-          ctx.closePath();
-          ctx.fill();
-        } else if (type === 'mail') {
-          ctx.strokeRect(cx - 44, cy - 30, 88, 60);
-          ctx.beginPath();
-          ctx.moveTo(cx - 44, cy - 30);
-          ctx.lineTo(cx, cy + 6);
-          ctx.lineTo(cx + 44, cy - 30);
-          ctx.stroke();
-        }
-
-        refreshMaterial(planeId);
+      const contactLink = document.getElementById("nav-contact");
+      if (CONFIG.contactUrl) {
+        contactLink.href = CONFIG.contactUrl;
+      } else {
+        contactLink.addEventListener("click", (e) => e.preventDefault());
       }
 
-      drawAvatar();
-      drawPillButton('#canvas-website', '#el-website', 'Website');
-      drawPillButton('#canvas-twitter', '#el-twitter', 'X / Twitter');
-      drawCircleIcon('#canvas-icon1', '#el-icon1', 'chat');
-      drawCircleIcon('#canvas-icon2', '#el-icon2', 'phone');
-      drawCircleIcon('#canvas-icon3', '#el-icon3', 'video');
-      drawCircleIcon('#canvas-icon4', '#el-icon4', 'mail');
+      // 2. Social リスト生成（URL設定済みの項目のみ描画）
+      const socialList = document.getElementById("social-list");
+      const validSocials = CONFIG.socials.filter((item) => item.url && item.url.trim() !== "");
 
-      window.addEventListener('DOMContentLoaded', () => {
-        const scene = document.querySelector('a-scene');
-        const video = document.querySelector('#card-video');
+      if (validSocials.length === 0) {
+        // URL未設定時の案内（設定完了後は消えます）
+        const emptyMsg = document.createElement("p");
+        emptyMsg.className = "about-body";
+        emptyMsg.textContent = "Social links are not configured yet in CONFIG.socials.";
+        socialList.appendChild(emptyMsg);
+      } else {
+        validSocials.forEach((item) => {
+          const a = document.createElement("a");
+          a.className = "social-link-row";
+          a.href = item.url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
 
-        scene.addEventListener('loaded', () => {
-          setTimeout(() => {
-            refreshMaterial('#el-avatar');
-            refreshMaterial('#el-website');
-            refreshMaterial('#el-twitter');
-            refreshMaterial('#el-icon1');
-            refreshMaterial('#el-icon2');
-            refreshMaterial('#el-icon3');
-            refreshMaterial('#el-icon4');
-            refreshMaterial('#el-video');
-          }, 500);
-        });
-
-        const startPlayback = () => {
-          if (video) {
-            video.muted = true;
-            video.play().then(() => refreshMaterial('#el-video')).catch(() => {});
+          const badge = document.createElement("span");
+          badge.className = "social-badge";
+          if (item.type === "x") {
+            badge.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
+          } else {
+            badge.textContent = "note";
+            badge.style.fontSize = "10px";
           }
-        };
-        window.addEventListener('touchstart', startPlayback, { passive: true });
-        window.addEventListener('click', startPlayback);
 
-        document.querySelectorAll('.clickable').forEach((el) => {
-          el.addEventListener('click', () => {
-            const url = el.getAttribute('data-url');
-            if (url) window.open(url, '_blank');
-          });
+          const text = document.createElement("span");
+          text.className = "social-text";
+          text.textContent = item.label;
+
+          a.appendChild(badge);
+          a.appendChild(text);
+          socialList.appendChild(a);
         });
+      }
 
-        const target = document.querySelector('#card-target');
-        const overlay = document.querySelector('#ui-overlay');
-
-        target.addEventListener('targetFound', () => {
-          overlay.style.opacity = '0';
-          refreshMaterial('#el-avatar');
-          refreshMaterial('#el-website');
-          refreshMaterial('#el-twitter');
-          if (video) {
-            video.muted = true;
-            video.play().then(() => refreshMaterial('#el-video')).catch(() => {});
-          }
-        });
-
-        target.addEventListener('targetLost', () => {
-          overlay.style.opacity = '1';
-          if (video) video.pause();
-        });
+      // 3. 上から順にふわっと表示する演出
+      const uiShell = document.getElementById("ui-shell");
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          uiShell.classList.add("is-visible");
+        }, 120);
       });
-    </script>
-  </body>
+
+      // ARターゲット検出時にスキャンヒントを非表示
+      const cardTarget = document.getElementById("card-target");
+      const scanHint = document.getElementById("scan-hint");
+      cardTarget.addEventListener("targetFound", () => {
+        scanHint.classList.add("is-hidden");
+      });
+      cardTarget.addEventListener("targetLost", () => {
+        scanHint.classList.remove("is-hidden");
+      });
+
+      // 4. 動画プレーヤー制御（タップ再生・音声付き自動再生なし）
+      const video = document.getElementById("promo-video");
+      const placeholder = document.getElementById("video-placeholder");
+      const centerPlayBtn = document.getElementById("center-play-btn");
+      const barPlayBtn = document.getElementById("bar-play-btn");
+      const barPlayIcon = document.getElementById("bar-play-icon");
+      const vcTime = document.getElementById("vc-time");
+      const vcProgress = document.getElementById("vc-progress");
+      const vcProgressFill = document.getElementById("vc-progress-fill");
+      const muteBtn = document.getElementById("mute-btn");
+      const muteIcon = document.getElementById("mute-icon");
+
+      if (CONFIG.videoSrc) {
+        video.src = CONFIG.videoSrc;
+        placeholder.style.display = "none";
+      } else {
+        centerPlayBtn.style.display = "none";
+      }
+
+      const formatTime = (sec) => {
+        if (!isFinite(sec)) return "0:00";
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60).toString().padStart(2, "0");
+        return `${m}:${s}`;
+      };
+
+      const updatePlayUI = () => {
+        const paused = video.paused;
+        centerPlayBtn.classList.toggle("is-hidden", !paused);
+        barPlayIcon.innerHTML = paused
+          ? `<polygon points="6,4 20,12 6,20"></polygon>`
+          : `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
+      };
+
+      const togglePlay = () => {
+        if (!CONFIG.videoSrc) return;
+        if (video.paused) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      };
+
+      centerPlayBtn.addEventListener("click", togglePlay);
+      barPlayBtn.addEventListener("click", togglePlay);
+      video.addEventListener("click", togglePlay);
+      video.addEventListener("play", updatePlayUI);
+      video.addEventListener("pause", updatePlayUI);
+      video.addEventListener("ended", updatePlayUI);
+
+      video.addEventListener("loadedmetadata", () => {
+        vcTime.textContent = `0:00 / ${formatTime(video.duration)}`;
+      });
+
+      video.addEventListener("timeupdate", () => {
+        const pct = video.duration ? (video.currentTime / video.duration) * 100 : 0;
+        vcProgressFill.style.width = `${pct}%`;
+        vcTime.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
+      });
+
+      vcProgress.addEventListener("click", (e) => {
+        if (!video.duration) return;
+        const rect = vcProgress.getBoundingClientRect();
+        const ratio = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+        video.currentTime = ratio * video.duration;
+      });
+
+      muteBtn.addEventListener("click", () => {
+        video.muted = !video.muted;
+        muteIcon.innerHTML = video.muted
+          ? `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`
+          : `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>`;
+      });
+
+      // 5. モーダル開閉（Social & About Me）
+      const socialBackdrop = document.getElementById("social-backdrop");
+      const navSocial = document.getElementById("nav-social");
+      const socialClose = document.getElementById("social-close");
+
+      const openSheet = (backdrop, trigger) => {
+        backdrop.classList.add("is-open");
+        if (trigger) trigger.setAttribute("aria-expanded", "true");
+      };
+
+      const closeSheet = (backdrop, trigger) => {
+        backdrop.classList.remove("is-open");
+        if (trigger) trigger.setAttribute("aria-expanded", "false");
+      };
+
+      navSocial.addEventListener("click", () => openSheet(socialBackdrop, navSocial));
+      socialClose.addEventListener("click", () => closeSheet(socialBackdrop, navSocial));
+      socialBackdrop.addEventListener("click", (e) => {
+        if (e.target === socialBackdrop) closeSheet(socialBackdrop, navSocial);
+      });
+
+      const profileTrigger = document.getElementById("profile-trigger");
+      const aboutBackdrop = document.getElementById("about-backdrop");
+      const aboutClose = document.getElementById("about-close");
+      const aboutBody = document.getElementById("about-body");
+
+      if (CONFIG.aboutText && CONFIG.aboutText.trim() !== "") {
+        aboutBody.textContent = CONFIG.aboutText;
+        profileTrigger.addEventListener("click", () => openSheet(aboutBackdrop));
+        profileTrigger.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openSheet(aboutBackdrop);
+          }
+        });
+      } else {
+        profileTrigger.style.cursor = "default";
+      }
+
+      aboutClose.addEventListener("click", () => closeSheet(aboutBackdrop));
+      aboutBackdrop.addEventListener("click", (e) => {
+        if (e.target === aboutBackdrop) closeSheet(aboutBackdrop);
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeSheet(socialBackdrop, navSocial);
+          closeSheet(aboutBackdrop);
+        }
+      });
+    });
+  </script>
+</body>
 </html>
