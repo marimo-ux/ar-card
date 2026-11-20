@@ -31,15 +31,18 @@
       height: 100%;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: transparent;
+      background: #000;
       color: var(--navy);
     }
 
-    /* MindARのカメラ映像やcanvasの座標計算を壊さないよう、z-indexのみ制御 */
-    a-scene {
-      position: fixed;
-      inset: 0;
-      z-index: 1;
+    /* A-Frameの背景を完全透明にして背面のカメラ映像を透過させる */
+    a-scene, .a-canvas {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: 2 !important;
+      background: transparent !important;
     }
 
     /* =========================================
@@ -222,12 +225,13 @@
       pointer-events: none;
     }
 
+    /* 背景を暗く潰さないクリーンな点線枠のみ */
     .scan-frame {
-      width: 240px;
-      height: 145px;
+      width: 250px;
+      height: 150px;
       border-radius: 18px;
-      border: 1.5px dashed rgba(255, 255, 255, 0.85);
-      box-shadow: 0 0 0 9999px rgba(16, 22, 42, 0.25);
+      border: 2px dashed rgba(255, 255, 255, 0.85);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
     .scan-hint {
@@ -306,23 +310,6 @@
       display: block;
       background: rgba(24, 28, 48, 0.25);
       border-radius: inherit;
-    }
-
-    .video-placeholder {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      color: var(--navy);
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-align: center;
-      padding: 16px;
-      pointer-events: none;
     }
 
     .video-center-play {
@@ -614,12 +601,12 @@
 
   <div id="shutter-flash" class="shutter-flash"></div>
 
-  <!-- AR シーン（平滑化フィルター付きでブレと飛びを防止） -->
+  <!-- AR シーン（alpha: true で背景完全透過） -->
   <a-scene
     id="ar-scene"
     mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.0001; filterBeta: 0.001;"
     color-space="sRGB"
-    renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true;"
+    renderer="colorManagement: true; alpha: true;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
 
@@ -627,7 +614,7 @@
     <a-entity id="card-target" mindar-image-target="targetIndex: 0"></a-entity>
   </a-scene>
 
-  <!-- 画面固定UI（名刺認識後に順次フェードイン） -->
+  <!-- 画面固定UI -->
   <main id="ui-shell" class="ui-shell" aria-label="MARI AR Business Card Interface">
 
     <!-- 1. 上部プロフィール -->
@@ -683,10 +670,6 @@
           muted
           loop
           preload="auto"></video>
-
-        <div id="video-placeholder" class="video-placeholder" style="display: none;">
-          <span>Video Preview (16:9)</span>
-        </div>
 
         <button
           id="center-play-btn"
@@ -798,6 +781,14 @@
     };
 
     document.addEventListener("DOMContentLoaded", () => {
+      const scene = document.getElementById("ar-scene");
+
+      // MindARが準備完了した瞬間にresizeイベントを発火させ、カメラ映像を全画面サイズへ正しくフィットさせる
+      scene.addEventListener("arReady", () => {
+        window.dispatchEvent(new Event("resize"));
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 300);
+      });
+
       // 1. プロフィール画像設定（フォールバック付き）
       const profileImg = document.getElementById("profile-img");
       profileImg.onerror = () => {
